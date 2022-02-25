@@ -16,13 +16,13 @@ Original file is located at
 #@markdown 5. __Remember to `Runtime > Reset all runtimes...` when done with notebook__
 import os
 from getpass import getpass
-api_key = os.envion['CUMC_API']
+api_key = os.environ['CUMC_API']
 
 #@title Install Flywheel SDK package
 #@markdown This cell needs to run in order to use the Flywheel SDK
 flywheel_SDK_version = '14.6.6'  #@param {type: "string"}
 
-!pip install flywheel-sdk~={flywheel_SDK_version}
+#!pip install flywheel-sdk~={flywheel_SDK_version}
 
 # Commented out IPython magic to ensure Python compatibility.
 #@title Import packages
@@ -161,7 +161,9 @@ def format_session_label(fw_client, session_id):
     session_label_patt = re.compile('^PA[\d]*_V[\d]W[\d]$')
     # Get the session object
     session = fw_client.get_session(session_id)
-    
+    if session.id == '61be4e5cd68321a1a8ff918e':
+        print('no way')
+        return None
    
     # Use lastname to determine code and visit
     lastname = session.info['subject_raw']['lastname']
