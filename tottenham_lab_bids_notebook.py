@@ -16,7 +16,7 @@ Original file is located at
 #@markdown 5. __Remember to `Runtime > Reset all runtimes...` when done with notebook__
 import os
 from getpass import getpass
-api_key = os.envion(['CUMC_API'])
+api_key = os.envion['CUMC_API']
 
 #@title Install Flywheel SDK package
 #@markdown This cell needs to run in order to use the Flywheel SDK
