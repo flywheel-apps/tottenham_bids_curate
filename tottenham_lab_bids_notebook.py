@@ -451,42 +451,42 @@ if paths_duplicates_unique:
             run_curate_bids_job(fw, session_id=session, reset=False, entire_project=False)
 
 """END HERE. below is testing only..."""
-
-#@title Deface
-def submit_deface_job(fw_client, acquisition):
-
-    gear = fw_client.lookup('gears/mri-deface')
-    # use the acquisition's session as the destination
-    destination = fw_client.get_session(acquisition.session)
-    
-    # set the config options
-    config = {'output_mgh': False, 'output_nifti': True}
-    
-    # get list of nifti files in acquisition
-    nifti_files = [file_obj for file_obj in acquisition.files if file_obj.type == 'nifti']
-    
-    # Something is off if more than one nifti file is in the acquisition
-    #need logic to deal with 2. also need logic to deal with W1 scans, labeled differently.
-    if len(nifti_files) == 1:
-        analysis_label = f'deface_acquisition_{acquisition.id}'
-        # get the first nifti file
-        inputs = {'anatomical': nifti_files[0]}
-        analysis_id = gear.run(analysis_label=analysis_label, destination=destination, config=config, inputs=inputs)
-        return analysis_id
-    else:
-        print(f'acquisition {acquisition.id} has {len(nifti_files)} nifti files. Expected 1')
-        return None
-
-#test_acq = fw.lookup('tottenham/PACCT_study_w2/PA170/PA170_V2W2/ABCD_T1w_MPR_vNav').reload()
-#submit_deface_job(fw, test_acq)
-
-#@title Deface - David query
-query = f'parents.project={pacct_2_project.id},label=ABCD_T1w_MPR_vNav,files.info.ImageType=NORM'
-acq_list = acq_list = [acq for acq in fw.acquisitions.iter_find(query)]
-test_acq = acq_list[0]
-print(test_acq)
-#submit_deface_job(fw, test_acq)
-
-#add in code for uploading EDITED poke and faces csvs
-#add in code to convert those files to TSVS
-#export project to elvis
+#
+# #@title Deface
+# def submit_deface_job(fw_client, acquisition):
+#
+#     gear = fw_client.lookup('gears/mri-deface')
+#     # use the acquisition's session as the destination
+#     destination = fw_client.get_session(acquisition.session)
+#
+#     # set the config options
+#     config = {'output_mgh': False, 'output_nifti': True}
+#
+#     # get list of nifti files in acquisition
+#     nifti_files = [file_obj for file_obj in acquisition.files if file_obj.type == 'nifti']
+#
+#     # Something is off if more than one nifti file is in the acquisition
+#     #need logic to deal with 2. also need logic to deal with W1 scans, labeled differently.
+#     if len(nifti_files) == 1:
+#         analysis_label = f'deface_acquisition_{acquisition.id}'
+#         # get the first nifti file
+#         inputs = {'anatomical': nifti_files[0]}
+#         analysis_id = gear.run(analysis_label=analysis_label, destination=destination, config=config, inputs=inputs)
+#         return analysis_id
+#     else:
+#         print(f'acquisition {acquisition.id} has {len(nifti_files)} nifti files. Expected 1')
+#         return None
+#
+# #test_acq = fw.lookup('tottenham/PACCT_study_w2/PA170/PA170_V2W2/ABCD_T1w_MPR_vNav').reload()
+# #submit_deface_job(fw, test_acq)
+#
+# #@title Deface - David query
+# query = f'parents.project={pacct_2_project.id},label=ABCD_T1w_MPR_vNav,files.info.ImageType=NORM'
+# acq_list = acq_list = [acq for acq in fw.acquisitions.iter_find(query)]
+# test_acq = acq_list[0]
+# print(test_acq)
+# #submit_deface_job(fw, test_acq)
+#
+# #add in code for uploading EDITED poke and faces csvs
+# #add in code to convert those files to TSVS
+# #export project to elvis
