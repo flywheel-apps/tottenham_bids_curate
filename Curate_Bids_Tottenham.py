@@ -39,12 +39,12 @@ class Curator(HierarchyCurator):
         else:
             new_subject_code = session_label_patt.match(session.label).group('sub_code')
         if new_subject_code == session.subject.code:
-            print('Session {} has the correct label {}'.format(session.label,
+            print('Session {} parent {} has the correct label {}'.format(session.label, session.subject.code,
                                                                new_subject_code))
             return None
 
         query = 'project={},code={}'.format(session.project, new_subject_code)
-        subjects = fw_client.subjects.find(query)
+        subjects = self.fw_client.subjects.find(query)
         if subjects:
             print('Moving {} to existing subject {}'.format(session.label,
                                                             new_subject_code))
@@ -53,8 +53,8 @@ class Curator(HierarchyCurator):
             print('Creating new subject {} for session {}'.format(new_subject_code,
                                                                   session.label))
             print("subject = fw_client.get(session.project).add_subject(code=new_subject_code)")
-            subject = fw_client.get(session.project).add_subject(code=new_subject_code)
-        former_subject = fw_client.get(session.subject.id)
+            subject = self.fw_client.get(session.project).add_subject(code=new_subject_code)
+        former_subject = self.fw_client.get(session.subject.id)
         update = session.update({'subject': {'_id': subject.id}})
         print("update = session.update({'subject': {'_id': subject.id}})")
         print(subject.id)
@@ -62,7 +62,7 @@ class Curator(HierarchyCurator):
         former_subject = former_subject.reload()
         if not former_subject.files and not former_subject.sessions():
             print('Removing orphan subject: {}'.format(former_subject.code))
-            fw_client.delete_subject(former_subject.id)
+            self.fw_client.delete_subject(former_subject.id)
         return update
 
 
@@ -163,7 +163,6 @@ class Curator(HierarchyCurator):
             print(f"Not curating {file_.name}")
             return
 
-
         parent = file_.parent
         parent = parent.reload()
         file_new = [f for f in parent.files if f.id == file_.id][0]
@@ -176,6 +175,27 @@ class Curator(HierarchyCurator):
 
         if info['SeriesDescription'] != 'MoCoSeries':
             return
+
+
+
+        parent_ses = self.fw_client.get_session(parent.parents['session'])
+        content_time = file_new.parent.timestamp
+        current_inc = 1
+        min_time = content_time - datetime.timedelta(seconds=current_inc)
+        max_time = content_time + datetime.timedelta(seconds=current_inc)
+        acqs = parent_ses.acquisitions.find(f"_id!={parent.id},label!=StartFMRI,timestamp<={max_time.strftime('%Y-%m-%dT%H:%M:%S')},timestamp>={min_time.strftime('%Y-%m-%dT%H:%M:%S')}")
+
+        if len(acqs) == 1:
+            acq = acqs[0]
+            acq = acq.reload()
+            file_match = [f for f in acq.files if f.type == 'dicom'][0]
+            update_acq_from_file(parent, file_match)
+            print('Updating curator key')
+            print(file_new.update_info({'Hierarchy_Curated':True}))
+            return
+
+
+
         #print(info)
         #print(file_new.name)
 
@@ -189,9 +209,11 @@ class Curator(HierarchyCurator):
             print(file_.parent.id)
 
         #return
+        to_pop = ['MOCO', 'DERIVED', 'FILTERED']
+        for tp in to_pop:
+            if tp in image_type:
+                image_type.pop(image_type.index(tp))
 
-        image_type.pop(image_type.index('MOCO'))
-        image_type.pop(image_type.index('DERIVED'))
         new_image_type = ['ORIGINAL']
         new_image_type.extend(image_type)
 
@@ -218,9 +240,10 @@ class Curator(HierarchyCurator):
             query = f"file.info.FrameOfReferenceUID = {foruid} AND " \
                     f"file.info.ImageType IN {new_image_type} AND " \
                     f"session._id = '{file_new.parent.parents.session}' AND " \
-                    f"acquisition.timestamp >= {min_time.strftime('%Y-%m-%dT%H:%M:%S.000Z')} AND " \
-                    f"acquisition.timestamp <= {max_time.strftime('%Y-%m-%dT%H:%M:%S.000Z')} AND " \
+                    f"acquisition.timestamp >= {min_time.strftime('%Y-%m-%dT%H:%M:%S')} AND " \
+                    f"acquisition.timestamp <= {max_time.strftime('%Y-%m-%dT%H:%M:%S')} AND " \
                     f"NOT file.info.ImageType IN [DERIVED, MOCO]"
+            #   f"acquisition.timestamp <= {max_time.strftime('%Y-%m-%dT%H:%M:%S.000Z')} AND " \
             #print(query)
             results = self.fw_client.search({'structured_query': query, 'return_type': 'file'})
 
@@ -236,22 +259,29 @@ class Curator(HierarchyCurator):
             return
 
         file_match = files[0]
-        series_name = file_match.info.get('SeriesDescription')
-        new_name = f"{series_name}-MoCoSeries"
+        update_acq_from_file(parent, file_match)
 
-        old_name = file_new.parent.label
-        if old_name != new_name:
-            print(f'WARNING! Old name {old_name} does not match new name {new_name}')
-            print("file_.update_info({'old_acquisition_label': old_name})")
-            print(old_name)
-            file_new.update_info({'old_acquisition_label': old_name})
-
-            print("Would Run file_.parent.update({'label': new_name})")
-            print(new_name)
-            file_new.parent.update({'label': new_name})
         print('Updating curator key')
         print(file_new.update_info({'Hierarchy_Curated':True}))
 
+
+
+def update_acq_from_file(acq, file_match):
+    series_name = file_match.info.get('SeriesDescription')
+    new_name = f"{series_name}-MoCoSeries"
+
+    old_name = acq.label
+    if old_name != new_name:
+        print(f'WARNING! Old name {old_name} does not match new name {new_name}')
+        print("file_.update_info({'old_acquisition_label': old_name})")
+        print(old_name)
+        acq.update_info({'old_acquisition_label': old_name})
+
+        print("Would Run file_.parent.update({'label': new_name})")
+        print(new_name)
+        acq.update({'label': new_name})
+    else:
+        print(f'{acq.label} already curated')
 
 
 
