@@ -119,6 +119,7 @@ def add_func_to_moco_label(fw_client, moco_obj):
     time_str1 = time_1.strftime('%Y-%m-%dT%H:%M:%S')
     time_2 = moco_obj.timestamp+datetime.timedelta(seconds=20)
     time_str2 = time_2.strftime('%Y-%m-%dT%H:%M:%S')
+
     # Format a query for selecting appropriate functionals
     query = (
         'session={},'
