@@ -154,10 +154,21 @@ class Curator(HierarchyCurator):
 
         return True
 
-
     def curate_file(self, file_: flywheel.FileEntry):
+        pass
 
 
+
+
+######################################################################
+## OLD SECTIONS OF CODE
+## These aren't run and will only be necessary if things change in the future
+######################################################################
+
+
+
+    def curate_file_old(self, file_: flywheel.FileEntry):
+        """This only needs to be run if you need to curate the motion correction files for BIDS."""
 
         if not self.validate_file(file_):
             print(f"Not curating {file_.name}")
@@ -176,7 +187,9 @@ class Curator(HierarchyCurator):
         if info['SeriesDescription'] != 'MoCoSeries':
             return
 
-
+        if file_new.info.get('Hierarchy_Curated',False):
+            print('skipping curated file')
+            return
 
         parent_ses = self.fw_client.get_session(parent.parents['session'])
         content_time = file_new.parent.timestamp
@@ -263,6 +276,7 @@ class Curator(HierarchyCurator):
 
         print('Updating curator key')
         print(file_new.update_info({'Hierarchy_Curated':True}))
+
 
 
 

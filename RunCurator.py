@@ -1,21 +1,43 @@
 import logging
 
 import flywheel
-import pandas as pd
-import flywheel_gear_toolkit
 from flywheel_gear_toolkit.utils import walker
 from Curate_Bids_Tottenham import Curator
-from flywheel_gear_toolkit.utils import curator as c
-
-
+import os
 from importlib import metadata
+
+
+
+
+"""
+To Run this code:
+
+1a. Add your flywheel api key as an environmental variable named "CUMC_API":
+
+    ```
+    > CUMC_API='my_api_key_string'
+    > export CUMC_API
+    ```
+1b. OR replace line 41 with your api key:
+    ` fw = flywheel.Client('my_api_key_string') `
+
+2. Ensure that the project ID in line 42 is correct for the project you want to run this on 
+
+3. open a terminal window in this directory
+
+4. Run the command:
+    ` python RunCurator.py `
+    
+NOTE that this was built and tested with python 3.8
+
+"""
+
 print(metadata.version('flywheel_gear_toolkit'))
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("root")
 
-import os
 fw = flywheel.Client(os.environ['CUMC_API'])
 project = fw.get_project('5cace5acb2baaf0030809b02')
 my_walker = walker.Walker(project)
