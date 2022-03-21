@@ -21,50 +21,39 @@ class Curator(HierarchyCurator):
         pass
     def curate_subject(self, subject: flywheel.Subject):
         #pass
-        subject = subject.reload()
+        orig_subject = subject.reload()
         subjects = None
-        session_label_patt = re.compile('^(?P<sub_code>PA[\d]*)_V[\d]W[\d]$')
-        session = subject.sessions.find_first()
-        if not session:
-            print(f'No session for subject {subject.label}')
-            return
 
-        if not session_label_patt.match(session.label):
-            print('ERROR: {} does not match the pattern for PACCT sessions'.format(
-                session.label
-            ))
-            print(session.label)
-            print('Please try updating session label first.')
-            return None
-        else:
-            new_subject_code = session_label_patt.match(session.label).group('sub_code')
-        if new_subject_code == session.subject.code:
-            print('Session {} parent {} has the correct label {}'.format(session.label, session.subject.code,
-                                                               new_subject_code))
+        number_patt = re.compile('.*([Pp][Aa]).*(?P<num>[\d]{3,}).*')
+        lastname = orig_subject.lastname
+        new_subject_code = 'PA' + number_patt.match(lastname).group('num')
+        if new_subject_code == subject.code:
+            print('Subject {} has the correct label'.format(orig_subject.label))
             return None
 
-        query = 'project={},code={}'.format(session.project, new_subject_code)
+        query = 'project={},code={}'.format(orig_subject.project, new_subject_code)
         subjects = self.fw_client.subjects.find(query)
         if subjects:
-            print('Moving {} to existing subject {}'.format(session.label,
+            print('Moving {} to existing subject {}'.format(orig_subject.label,
                                                             new_subject_code))
-            subject = subjects[0]
+            new_subject = subjects[0]
         else:
             print('Creating new subject {} for session {}'.format(new_subject_code,
-                                                                  session.label))
+                                                                  orig_subject.label))
             print("subject = fw_client.get(session.project).add_subject(code=new_subject_code)")
-            subject = self.fw_client.get(session.project).add_subject(code=new_subject_code)
-        former_subject = self.fw_client.get(session.subject.id)
-        update = session.update({'subject': {'_id': subject.id}})
-        print("update = session.update({'subject': {'_id': subject.id}})")
-        print(subject.id)
+            new_subject = self.fw_client.get(subject.project).add_subject(code=new_subject_code)
+
+
+        for session in orig_subject.sessions():
+            update = session.update({'subject': {'_id': new_subject.id}})
+            print("update = session.update({'subject': {'_id': subject.id}})")
+        print(new_subject.id)
         update = None
-        former_subject = former_subject.reload()
+        former_subject = orig_subject.reload()
         if not former_subject.files and not former_subject.sessions():
             print('Removing orphan subject: {}'.format(former_subject.code))
             self.fw_client.delete_subject(former_subject.id)
         return update
-
 
     def curate_session(self, session: flywheel.Session):
         #pass
