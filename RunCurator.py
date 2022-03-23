@@ -48,3 +48,24 @@ my_walker = walker.Walker(project)
 bids_curator = Curator()
 for container in my_walker.walk():
     bids_curator.curate_container(container)
+
+
+# bids_curator = Curatdor()
+# acqs = None
+# acqs = fw.acquisitions.iter_find('project=5cace5acb2baaf0030809b02,session!=61be4e5cd68321a1a8ff918e,info.curation=null')
+# for a in acqs:
+#     print(a.label)
+#     break
+#     bids_curator.curate_acquisition(a)
+
+
+# print('-------------------------------------------------------------------Moving on to visit is null-------------------------------------------------------------------')
+# acqs = acqs=fw.acquisitions.iter_find('project=5cace5acb2baaf0030809b02,info.curation.recommended.visit=null,session!=61be4e5cd68321a1a8ff918e')
+# for a in acqs:
+#     print(a.label)
+#     bids_curator.curate_acquisition(a)
+#
+#
+# acqs=fw.acquisitions.iter_find('project=5cace5acb2baaf0030809b02,session!=61be4e5cd68321a1a8ff918e,info.curation.recommended.session_label')
+# acqs=fw.acquisitions.iter_find('project=5cace5acb2baaf0030809b02,info.curation.PatientID!=info.curation.recommended.session_label')
+# acqs=fw.acquisitions.iter_find('project=5cace5acb2baaf0030809b02,session!=61be4e5cd68321a1a8ff918e,info.curation.current.session_label!=info.curation.recommended.session_label')
