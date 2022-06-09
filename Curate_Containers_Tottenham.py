@@ -8,12 +8,15 @@ import tempfile
 from pathlib import Path
 from flywheel.rest import ApiException
 
-# Version 1.0.4
-version = "1.0.4"
+# Version 1.0.5
+version = "1.0.5"
 print(f"{version=}")
 
 
 ## Changelog:
+
+# Version 1.0.5
+# moved old subject cleanup to a more robust try...except I hope
 
 # Version 1.0.4
 # Added more initial validation checks
@@ -282,15 +285,17 @@ class Curator(HierarchyCurator):
             # Cleanup old subject:
             try:
                 old_subject = self.fw_client.get_subject(original_subject_id)
+                if not old_subject.files and not old_subject.sessions():
+                    print(f'Removing orphan subject: {old_subject.label}')
+                    if LOG_ONLY:
+                        print("*delete*")
+                    else:
+                        self.fw_client.delete_subject(old_subject.id)
+
             except ApiException as e:
                 print('Already removed')
 
-            if not old_subject.files and not old_subject.sessions():
-                print(f'Removing orphan subject: {old_subject.label}')
-                if LOG_ONLY:
-                    print("*delete*")
-                else:
-                    self.fw_client.delete_subject(old_subject.id)
+
 
         # This is all just for logging
         new_ses_id = session.id
