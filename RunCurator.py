@@ -2,7 +2,8 @@ import logging
 
 import flywheel
 from flywheel_gear_toolkit.utils import walker
-from Curate_Bids_Tottenham import Curator
+from Curate_Containers_Tottenham import Curator
+from Messy_Legacy_BruteForce_Curation_ScrapYard import Curator as Brute
 import os
 from importlib import metadata
 
@@ -39,18 +40,18 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("root")
 
 fw = flywheel.Client(os.environ['CUMC_API'])
-project = fw.get_project('5cace5acb2baaf0030809b02')
-my_walker = walker.Walker(project)
+# project = fw.get_project('5cace5acb2baaf0030809b02')
+# my_walker = walker.Walker(project)
 # context = flywheel_gear_toolkit.context
 # curator_path = '/Users/davidparker/Documents/Flywheel/Clients/Columbia/Tottenham/bids-curate/Curate_Bids_Tottenham.py'
 # curator = c.get_curator(context, curator_path)
 
-bids_curator = Curator()
-for container in my_walker.walk():
-    bids_curator.curate_container(container)
+# bids_curator = Curator()
+# for container in my_walker.walk():
+#     bids_curator.curate_container(container)
+#
 
-
-# bids_curator = Curatdor()
+# bids_curator = Curator()
 # acqs = None
 # acqs = fw.acquisitions.iter_find('project=5cace5acb2baaf0030809b02,session!=61be4e5cd68321a1a8ff918e,info.curation=null')
 # for a in acqs:
@@ -69,3 +70,14 @@ for container in my_walker.walk():
 # acqs=fw.acquisitions.iter_find('project=5cace5acb2baaf0030809b02,session!=61be4e5cd68321a1a8ff918e,info.curation.recommended.session_label')
 # acqs=fw.acquisitions.iter_find('project=5cace5acb2baaf0030809b02,info.curation.PatientID!=info.curation.recommended.session_label')
 # acqs=fw.acquisitions.iter_find('project=5cace5acb2baaf0030809b02,session!=61be4e5cd68321a1a8ff918e,info.curation.current.session_label!=info.curation.recommended.session_label')
+log="/Users/davidparker/Documents/Flywheel/Clients/Columbia/Tottenham/bids-curate/report.csv"
+if os.path.exists(log):
+    os.remove(log)
+test_ses = '5a08824b93f3a400191ab632'
+session = fw.get_session(test_ses)
+bids_curator = Curator()
+bids_curator.curate_container(session)
+# for a in session.acquisitions.find('label=poke1'):
+#     print(a.label)
+#     bids_curator.curate_acquisition_old(a)
+#     break

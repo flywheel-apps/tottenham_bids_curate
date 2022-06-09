@@ -80,87 +80,88 @@ class Curator(HierarchyCurator):
         # return update
 
     def curate_session(self, session: flywheel.Session):
-        session = session.reload()
-        if session.id in ["61be4e5cd68321a1a8ff918e", "61be4e5cd68321a1a8ff918e"]:
-            print("no way")
-            return None
-
-        if session.info.get('subject_raw', {}).get('curated', False):
-            return None
-
-        number_patt = re.compile('.*([Pp][Aa]).*(?P<num>[\d]{3,}).*')
-        visit_patt = re.compile('.*(?P<visit>[Vv][\d]+_?[Ww][\d]+$)')
-        session_label_patt = re.compile('^(?P<sub_code>PA[\d]*)_V[\d]W[\d]$')
-
-        sub_label = session.subject.label
-        if session_label_patt.match(sub_label):
-            sub_id = session_label_patt.match(sub_label).group('sub_code')
-            visit = visit_patt.match(sub_label).group('visit')
-
-        elif session_label_patt.match(session.subject.lastname):
-            lastname = session.subject.lastname
-            sub_id = session_label_patt.match(lastname).group('sub_code')
-            visit = visit_patt.match(lastname).group('visit')
-        else:
-            sub_id = None
-            visit = None
-            print(f'Can not Decipher subject/session from {session.subject.label}')
-            return None
-
-        new_session_label = f"{sub_id}_{visit}"
-        new_subject_label = sub_id
-
-        print(f'new session label {new_session_label}')
-
-        find_subject = self.fw_client.subjects.find(f'project={session.parents.project},label={new_subject_label}')
-        if len(find_subject) > 1:
-            print(f'ERROR MULTIPLE SUBJECTS WITH LABEL {new_subject_label} found!')
-            return None
-        elif len(find_subject) == 0:
-            print(f'no subject with label {new_subject_label} found, renaming')
-            subject = session.subject
-            subject.update({'label': new_subject_label})
-            subject.firstname = session.subject.firstname
-            subject.lastname = session.subject.lastname
-            subject.sex = session.subject.sex
-            subject = subject.reload()
-        else:
-            subject = find_subject[0]
-
-
-        subject_raw = {'firstname': subject.firstname,
-                       'lastname': subject.lastname,
-                       'sex': subject.sex,
-                       'ground_truth': '',
-                       'curated':False}
-
-        print('checking to see if new session label exists in subject')
-        find_sessions = subject.sessions.find(f'label={new_session_label}')
-        if len(find_sessions) > 1:
-            print(f'ERROR MULTIPLE SESSIONS WITH LABEL {new_session_label} in {new_subject_label} found!')
-            return None
-        elif len(find_sessions) == 0:
-            print(f'no session with label {new_session_label} found.  Will rename and Move')
-            session.update({'label': new_session_label})
-            session.update({'subject': subject.id})
-            subject_raw['ground_truth'] = new_session_label
-            subject_raw['curated'] = True
-
-        else:
-            new_session = find_sessions[0]
-            print(f'Session with {new_session_label} in {new_subject_label} found! to merge, set merge_existing = True')
-            if MERGE_EXISTING:
-                print('merging')
-                for acq in session.acquisitions():
-                    acq.upadte({'session': new_session.id})
-
-                subject_raw['curated'] = True
-
-            else:
-                print('skipping')
-
-
-        session.update_info({'subject_raw': subject_raw})
+        pass
+        # session = session.reload()
+        # if session.id in ["61be4e5cd68321a1a8ff918e", "61be4e5cd68321a1a8ff918e"]:
+        #     print("no way")
+        #     return None
+        #
+        # if session.info.get('subject_raw', {}).get('curated', False):
+        #     return None
+        #
+        # number_patt = re.compile('.*([Pp][Aa]).*(?P<num>[\d]{3,}).*')
+        # visit_code = re.compile('.*(?P<visit>[Vv][\d]+_?[Ww][\d]+$)')
+        # session_label_patt = re.compile('^(?P<sub_code>PA[\d]*)_V[\d]W[\d]$')
+        #
+        # sub_label = session.subject.label
+        # if session_label_patt.match(sub_label):
+        #     sub_id = session_label_patt.match(sub_label).group('sub_code')
+        #     visit = visit_code.match(sub_label).group('visit')
+        #
+        # elif session_label_patt.match(session.subject.lastname):
+        #     lastname = session.subject.lastname
+        #     sub_id = session_label_patt.match(lastname).group('sub_code')
+        #     visit = visit_code.match(lastname).group('visit')
+        # else:
+        #     sub_id = None
+        #     visit = None
+        #     print(f'Can not Decipher subject/session from {session.subject.label}')
+        #     return None
+        #
+        # new_session_label = f"{sub_id}_{visit}"
+        # new_subject_label = sub_id
+        #
+        # print(f'new session label {new_session_label}')
+        #
+        # find_subject = self.fw_client.subjects.find(f'project={session.parents.project},label={new_subject_label}')
+        # if len(find_subject) > 1:
+        #     print(f'ERROR MULTIPLE SUBJECTS WITH LABEL {new_subject_label} found!')
+        #     return None
+        # elif len(find_subject) == 0:
+        #     print(f'no subject with label {new_subject_label} found, renaming')
+        #     subject = session.subject
+        #     subject.update({'label': new_subject_label})
+        #     subject.firstname = session.subject.firstname
+        #     subject.lastname = session.subject.lastname
+        #     subject.sex = session.subject.sex
+        #     subject = subject.reload()
+        # else:
+        #     subject = find_subject[0]
+        #
+        #
+        # subject_raw = {'firstname': subject.firstname,
+        #                'lastname': subject.lastname,
+        #                'sex': subject.sex,
+        #                'ground_truth': '',
+        #                'curated':False}
+        #
+        # print('checking to see if new session label exists in subject')
+        # find_sessions = subject.sessions.find(f'label={new_session_label}')
+        # if len(find_sessions) > 1:
+        #     print(f'ERROR MULTIPLE SESSIONS WITH LABEL {new_session_label} in {new_subject_label} found!')
+        #     return None
+        # elif len(find_sessions) == 0:
+        #     print(f'no session with label {new_session_label} found.  Will rename and Move')
+        #     session.update({'label': new_session_label})
+        #     session.update({'subject': subject.id})
+        #     subject_raw['ground_truth'] = new_session_label
+        #     subject_raw['curated'] = True
+        #
+        # else:
+        #     new_session = find_sessions[0]
+        #     print(f'Session with {new_session_label} in {new_subject_label} found! to merge, set merge_existing = True')
+        #     if MERGE_EXISTING:
+        #         print('merging')
+        #         for acq in session.acquisitions():
+        #             acq.upadte({'session': new_session.id})
+        #
+        #         subject_raw['curated'] = True
+        #
+        #     else:
+        #         print('skipping')
+        #
+        #
+        # session.update_info({'subject_raw': subject_raw})
 
 
 
@@ -226,8 +227,8 @@ class Curator(HierarchyCurator):
         # else:
         #     subject_code = 'PA' + number_patt.match(lastname).group('num')
         # # If it's wave 2, the visit string will be in the label
-        # if visit_patt.match(lastname):
-        #     visit = visit_patt.match(lastname).group('visit')
+        # if visit_code.match(lastname):
+        #     visit = visit_code.match(lastname).group('visit')
         #     visit = visit.replace('_', '')
         # # Assume V1W1 if no matches on lastname
         # else:
@@ -296,7 +297,7 @@ class Curator(HierarchyCurator):
 
 
 
-    def curate_acquisition_old(self, acquisition: flywheel.Acquisition):
+    def curate_acquisition(self, acquisition: flywheel.Acquisition):
         number_patt = re.compile(".*([Pp][Aa]).*(?P<num>[\d]{3,}).*")
         visit_patt = re.compile(".*(?P<visit>[Vv][\d]+_?[Ww][\d]+$)")
         session_label_patt = re.compile("^PA[\d]*_V[\d]W[\d]$")
@@ -319,19 +320,20 @@ class Curator(HierarchyCurator):
         }
 
         acq_org_info = {"curation": curate_dict}
-        print(curate_dict)
+        #print(curate_dict)
         acquisition.update_info(acq_org_info)
         visit = curate_dict["recommended"]["visit"]
         ses_id = curate_dict["recommended"]["session_label"]
         subject_id = curate_dict["recommended"]["subject_label"]
 
         if not visit:
-            print("Cant curate")
+            print(f'{subject_id}/{ses_id}/{acquisition.label} CANT CURATE')
             return None
 
         mismatch = ""
 
         if session.label == ses_id and subject.label == subject_id:
+            print(f'{subject_id}/{ses_id}/{acquisition.label} good match')
             return None
 
         ses_mismatch = False
@@ -339,9 +341,12 @@ class Curator(HierarchyCurator):
         if session.label != ses_id:
             mismatch += "SESSION"
             ses_mismatch = True
+            print(f'{ses_id=}, {session.label=}')
         if subject.label != subject_id:
             mismatch += " SUBJECT"
             sub_mismatch = True
+            print(f'{subject_id=}, {subject.label=}')
+
 
         print(
             f"{mismatch} Mismatch:\n{subject.label}/{session.label}/{acquisition.label} vs \n{subject_id}/{ses_id}/{acquisition.label}\n"
@@ -371,7 +376,7 @@ class Curator(HierarchyCurator):
         #
         #
         # number_patt = re.compile('.*([Pp][Aa]).*(?P<num>[\d]{3,}).*')
-        # visit_patt = re.compile('.*(?P<visit>[Vv][\d]+_?[Ww][\d]+$)')
+        # visit_code = re.compile('.*(?P<visit>[Vv][\d]+_?[Ww][\d]+$)')
         # session_label_patt = re.compile('^PA[\d]*_V[\d]W[\d]$')
 
         pass
@@ -697,26 +702,9 @@ def check_file_info_special_cases(fw, acq, file):
     session_label_patt = re.compile("^PA[\d]*_V[\d]W[\d]$")
     visit_patt = re.compile(".*(?P<visit>[Vv][\d]+_?[Ww][\d]+$)")
 
-    if file.info.get(
-        "StudyDescription", file.info.get("PerformedProcedureStepDescription")
-    ) in [
-        "Tottenham^Child",
-        "Tottenham_Child",
-        "Tottenham^PACCT_study",
-        "Tottenham_PACCT_study",
-    ]:
-        visit = "V1W1"
-        print("DEBUG V1 match based off of old study description!")
+    visit = None
 
-    elif file.info.get(
-        "StudyDescription", file.info.get("PerformedProcedureStepDescription")
-    ) in [
-        "Tottenham^PACCT_study_w2",
-        "Tottenham_PACCT_study_w2",
-    ]:
-        visit = "V2W2"
-        print("DEBUG V2 match based off of old study description!")
-    else:
+    if file.info.get("PatientName"):
         patient_name = file.info.get("PatientName")
         if patient_name:
             session_match = visit_patt.match(patient_name)
@@ -736,6 +724,28 @@ def check_file_info_special_cases(fw, acq, file):
                 visit = subject_match.group("visit")
         else:
             visit = visit_patt.match(session.label).group("visit")
+
+
+    elif file.info.get(
+        "StudyDescription", file.info.get("PerformedProcedureStepDescription")
+    ) in [
+        "Tottenham^Child",
+        "Tottenham_Child",
+        "Tottenham^PACCT_study",
+        "Tottenham_PACCT_study",
+    ]:
+        visit = "V1W1"
+        print("DEBUG V1 match based off of old study description!")
+
+    elif file.info.get(
+        "StudyDescription", file.info.get("PerformedProcedureStepDescription")
+    ) in [
+        "Tottenham^PACCT_study_w2",
+        "Tottenham_PACCT_study_w2",
+    ]:
+        visit = "V2W2"
+        print("DEBUG V2 match based off of old study description!")
+
 
     return visit
 
@@ -792,8 +802,13 @@ def retry_patient_id_with_dicom(acq):
             visit_match = visit_patt.match(patientid)
             if not visit_match:
                 # session_label_patt = re.compile('^PA[\d]*_V[\d]W[\d]$')
+                patient_name = str(dc.get("PatientName"))
+                if patient_name:
+                    visit_match = visit_patt.match(patient_name)
+                    if visit_match:
+                        return_dict["visit"] = visit_match.group("visit").upper()
 
-                if dc.get(
+                elif dc.get(
                     "StudyDescription", dc.get("PerformedProcedureStepDescription")
                 ) in [
                     "Tottenham^Child",
@@ -810,12 +825,7 @@ def retry_patient_id_with_dicom(acq):
                          ]:
                     return_dict["visit"] = "V2W2"
                     print("DEBUG V2 match based off of old study description!")
-                else:
-                    patient_name = str(dc.get("PatientName"))
-                    if patient_name:
-                        visit_match = visit_patt.match(patient_name)
-                        if visit_match:
-                            return_dict["visit"] = visit_match.group("visit").upper()
+
             else:
                 return_dict["visit"] = visit_match.group("visit").upper()
 
@@ -889,3 +899,23 @@ def find_session(subject, ses_id):
         print(f"Mismatched session {ses_id} exists")
 
     return None
+
+
+def add_subraw(ses_id):
+    session = fw.get_session(ses_id)
+    sraw = session.info.get('subject_raw',{})
+
+    if 'firstname' not in sraw:
+        sraw['firstname'] = session.subject.firstname
+    if 'lastname' not in sraw:
+        sraw['lastname'] = session.subject.lastname
+    if 'sex' not in sraw:
+        sraw['sex'] = session.subject.sex
+    if 'ground_truth' not in sraw:
+        sraw['ground_truth'] = session.label
+    if 'curated' not in sraw:
+        sraw['curated'] = False
+
+    session.update_info({'subject_raw':sraw})
+
+

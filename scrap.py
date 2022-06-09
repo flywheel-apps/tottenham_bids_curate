@@ -106,3 +106,66 @@ for acq in acqs:
 
 
 # need pip install flywheel-sdk~=14.6.9
+
+
+
+import flywheel
+import datetime
+from dateutil.parser import parse
+import pytz
+
+fw = flywheel.Client('<YOUR_API_KEY>')
+users = fw.get_all_users()
+
+################################################################
+#       Example 1, users not logged in since a date            #
+################################################################
+time_1 = datetime.datetime(year=2019,month=1,day=1,tzinfo=pytz.utc)
+users_last_login_date = [u for u in users if u.lastlogin is not None and parse(u.lastlogin) < time_1]
+# Note that we must parse u.lastlogin because that is stored as a string in flywheel
+# Note that we must ensure that lastlogin exists for comparison (discussed at the end of these examples)
+
+print(f'\n\nThese users have not logged in since {time_1}:\n')
+for user in users_last_login_date:
+    print(f"{user.id}\t{user.lastlogin}")
+    # Uncomment these lines to disable users:
+    # fw.modify_user(user.id, {'disabled':True})
+
+
+################################################################
+#       Example 2, users not logged in for the past month      #
+################################################################
+time_2 = datetime.datetime.now(pytz.utc) - datetime.timedelta(days=60)
+users_last_login_2months = [u for u in users if u.lastlogin is not None and parse(u.lastlogin) < time_2]
+
+print('\n\nThese users have not logged in during the past two months:\n')
+for user in users_last_login_2months:
+    print(f"{user.id}\t{user.lastlogin}")
+    # Uncomment these lines to disable users:
+    # fw.modify_user(user.id, {'disabled':True})
+
+################################################################
+#       Example 3, users created a year ago                    #
+################################################################
+time_3 = datetime.datetime.now(pytz.utc) - datetime.timedelta(days=365)
+users_created_1year = [u for u in users if u.created < time_3]
+# Note that we do not need to parse created because that is stored as a datetime...yeah idk why either...
+
+print('\n\nThese users were created over a year ago:\n')
+for user in users_created_1year:
+    print(f"{user.id}\t{user.lastlogin}")
+    # Uncomment these lines to disable users:
+    # fw.modify_user(user.id, {'disabled':True})
+
+
+################################################################
+#  NOTE, some users don't have last login info, possibly a problem in reporting that info. Investigate these manually.
+################################################################
+users_without_info = [u for u in users if u.lastlogin is None]
+
+print('\n\nThese users may not have logged in/login info is not reporting properly\n')
+for user in users_without_info:
+    print(f"{user.id}\t{user.created}")
+
+
+

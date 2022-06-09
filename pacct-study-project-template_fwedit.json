@@ -1,0 +1,593 @@
+{
+  "extends": "bids-v1",
+  "description": "Additional rules for matching Tottenham data - v1.0.0",
+  "definitions": {
+    "session": {
+      "description": "BIDS session template",
+      "properties": {
+        "Label": {"type": "string", "title": "Label", "default": "", "pattern": "^[0-9]+$"},
+        "Subject": {"type": "string", "title": "Subject Code", "default": "", "auto_update": "{subject.code}"}
+      },
+      "required": []
+    },
+    "Run": {
+      "type": "string",
+      "title": "Run Index",
+      "default": "",
+      "pattern": "^[0-9]*[a-z]?$"
+    },
+    "func_file": {
+      "description": "BIDS template for func files",
+      "properties": {
+        "Filename": {"type": "string", "title": "Filename", "default": "", "minLength": 1,
+          "auto_update": "sub-{session.info.BIDS.Subject}[_ses-<session.info.BIDS.Label>]_task-{file.info.BIDS.Task}[_acq-{file.info.BIDS.Acq}][_rec-{file.info.BIDS.Rec}][_run-{file.info.BIDS.Run}][_echo-{file.info.BIDS.Echo}]_{file.info.BIDS.Modality}{ext}"},
+        "Folder": {"type": "string", "title": "Folder", "default": "func"},
+        "Path": {"type": "string", "title": "Path", "default": "",
+          "auto_update": "sub-{session.info.BIDS.Subject}[/ses-<session.info.BIDS.Label>]/{file.info.BIDS.Folder}"},
+        "Acq": {"$ref":"#/definitions/Acq"},
+        "Task": {"$ref":"#/definitions/Task"},
+        "Rec": {"$ref":"#/definitions/Rec"},
+        "Run": {
+          "type": "string",
+          "title": "Run Index",
+          "default": "",
+          "pattern": "^[0-9]*[a-z]?$"
+        },
+        "Echo": {"$ref":"#/definitions/Echo"},
+        "Modality": {"type": "string", "title": "Modality Label", "default": "bold",
+          "enum": [
+            "bold",
+            "sbref",
+            "stim",
+            "physio"
+          ]
+        }
+      },
+      "required": ["Filename", "Task", "Modality"]
+    },
+    "anat_file": {
+			"description": "BIDS template for anat files",
+			"properties": {
+				"Filename": {"type": "string", "title": "Filename", "default": "", "minLength": 1,
+					"auto_update": "sub-{session.info.BIDS.Subject}[_ses-{session.info.BIDS.Label}][_acq-{file.info.BIDS.Acq}][_ce-{file.info.BIDS.Ce}][_rec-{file.info.BIDS.Rec}][_run-{file.info.BIDS.Run}][_mod-{file.info.BIDS.Mod}]_{file.info.BIDS.Modality}{ext}"},
+				"Folder": {"type": "string", "title": "Folder", "default": "anat"},
+				"Path": {"type": "string", "title": "Path", "default": "",
+					"auto_update": "sub-{session.info.BIDS.Subject}[/ses-{session.info.BIDS.Label}]/{file.info.BIDS.Folder}"},
+				"Acq": {"$ref":"#/definitions/Acq"},
+				"Ce": {"$ref":"#/definitions/Ce"},
+				"Rec": {"$ref":"#/definitions/Rec"},
+                "Run": {"$ref":"#/definitions/Run"},
+              "Mod": {"$ref":"#/definitions/Mod"},
+				"Modality": {"type": "string", "title": "Modality Label", "default": "",
+					"enum": [
+						"T1w",
+						"T2w",
+            "T2star",
+						"T1rho",
+						"T1map",
+						"T2map",
+						"FLAIR",
+						"FLASH",
+						"PD",
+						"PDmap",
+						"PDT2",
+						"inplaneT1",
+						"inplaneT2",
+						"angio",
+						"defacemask",
+						"SWImagandphase"
+					]
+				}
+			},
+			"required": ["Filename", "Modality"]
+		}
+  },
+  "exclude_rules": [
+    "bids_session",
+    "bids_task_events_file",
+    "bids_func_file",
+    "bids_anat_file"
+  ],
+  "rules": [
+    {
+      "_id": "session",
+      "template": "session",
+      "where": {
+        "container_type": "session"
+      },
+      "initialize": {
+        "Label": {
+          "session.label": {
+            "$regex": "PA[0-9]+_(?P<value>V[0-9]+W[0-9]+.*)"
+          }
+        },
+        "Subject": {
+          "$regex": "(?P<value>PA[0-9]+).*"
+        }
+      }
+    },
+    {
+      "_id": "task_events_file",
+      "template": "task_events_file",
+      "where": {
+        "container_type": "file",
+        "parent_container_type": "session",
+        "file.type": {
+          "$in": ["tabular data", "Tabular Data"]
+        },
+        "file.name": {
+          "$regex": "^.*\\.tsv$"
+        }
+      },
+      "initialize": {
+        "Task": {
+          "file.name": {
+            "$regex": "PA[0-9]+_(?P<value>[^-_]+)"
+          }
+        },
+        "Run": {
+          "file.name": {
+            "$regex": [
+              "(^|_)run-(?P<value>[0-9]+)",
+              "(^|_)RUN(?P<value>[0-9]+)",
+              "(^|_)run(?P<value>[=+])"
+            ]
+          },
+          "$run_counter": {
+            "key": "task_events.{file.info.BIDS.Task}"
+          }
+        }
+      }
+    },
+    {
+      "id": "ignore_files",
+      "template": "acquisition_file",
+      "where": {
+        "container_type": "file",
+        "parent_container_type": "acquisition",
+        "acquisition.label": {
+          "$in": [
+            "ABCD_T1w_MPR_vNav_setter",
+            "Mean_&_t-Maps",
+            "Design",
+            "EvaSeries_GLM",
+            "AAHead_Scout",
+            "AAHead_Scout_MPR_cor",
+            "AAHead_Scout_MPR_sag",
+            "AAHead_Scout_MPR_tra",
+            "StartFMRI",
+            "Short_T2star_MoCo",
+            "MoCoSeries"
+          ]
+        }
+      },
+      "initialize": {
+        "ignore": true
+      }
+
+    },
+    {
+      "id": "T2_star",
+      "template": "anat_file",
+      "where": {
+        "container_type": "file",
+        "file.type": {
+          "$in": ["nifti", "NIfTI"]
+        },
+        "acquisition.label": {
+          "$regex": "^(Short_T2_star)(_[0-9])?$"
+        }
+      },
+      "initialize": {
+
+        "Modality": "T2star"
+
+      }
+    },
+    {
+      "id": "vNav",
+      "template": "anat_file",
+      "where": {
+        "container_type": "file",
+        "file.type": {
+          "$in": [
+            "nifti",
+            "NIfTI"
+          ]
+        },
+        "acquisition.label": {
+          "$regex": "^(.*MPR_vNav(_[0-9])?$)"
+        }
+      },
+      "initialize": {
+        "Modality": "T1w",
+        "Acq": "MPR",
+        "Rec": {
+          "$switch": {
+            "$on": "file.info.ImageType",
+            "$cases": [
+              {
+                "$eq": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND"
+                ],
+                "$value": "vNav"
+              },
+              {
+                "$eq": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND",
+                  "NORM"
+                ],
+                "$value": "vNavNorm"
+              }
+            ]
+          }
+        },
+        "Run": {
+          "$switch": {
+            "$on": "acquisition.label",
+            "$cases": [
+              {
+                "$regex": "(.*)",
+                "$value": "+"
+              }
+            ]
+          },
+          "$run_counter": {
+            "key": "anat_mpr.{file.info.BIDS.Rec}"
+          }
+        }
+      }
+    },
+    {
+      "id": "MPR_Norm",
+      "template": "anat_file",
+      "where": {
+        "container_type": "file",
+        "file.type": {
+          "$in": ["nifti", "NIfTI"]
+        },
+        "acquisition.label": {
+          "$regex": "^(.*T1w_MPR(_[0-9])?$)"
+        },
+        "file.info.ImageType": {
+          "$in": [
+            "ORIGINAL",
+            "PRIMARY",
+            "M",
+            "ND",
+            "NORM"
+          ]
+        }
+      },
+      "initialize": {
+        "Modality": "T1w",
+        "Acq": "MPR",
+        "Rec": "Norm",
+        "Run": {
+          "acquisition.label": {
+            "$regex": [
+              "(^|_)run-(?P<value>[0-9]+)",
+              "(^|_)run(?P<value>[=+])"
+            ]
+          },
+          "$run_counter": {
+            "key": "anat_norm.{file.info.BIDS.Rec}"
+          }
+        }
+      }
+    },
+    {
+      "id": "MPR",
+      "template": "anat_file",
+      "where": {
+        "container_type": "file",
+        "file.type": {
+          "$in": ["nifti", "NIfTI"]
+        },
+        "acquisition.label": {
+          "$regex": "^(.*T1w_MPR(_[0-9])?$)"
+        },
+        "file.info.ImageType": {
+          "$eq": [
+            "ORIGINAL",
+            "PRIMARY",
+            "M",
+            "ND"
+          ]
+        }
+      },
+      "initialize": {
+        "Modality": "T1w",
+        "Acq": "MPR"
+      }
+    },
+
+
+    {
+      "id": "fieldmap_phase_encoded_file",
+      "template": "fieldmap_phase_encoded_file",
+      "where": {
+        "container_type": "file",
+        "file.type": {
+          "$in": ["nifti", "NIfTI"]
+        },
+        "file.classification.Intent": {
+          "$in" : [ "Fieldmap" ]
+        },
+        "file.classification.Measurement": {
+          "$in" : [ "B0" ]
+        }
+      },
+      "initialize": {
+        "Dir": {
+          "$comment": "Currently matching bipedal orientations",
+          "acquisition.label": {
+            "$regex": "([^a-zA-Z0-9]|^)(?P<value>[aprlhfAPRLHF]{2})([^a-zA-Z0-9]|$)"
+          }
+        },
+        "Run": {
+          "acquisition.label": {
+            "$regex": [
+              "(^|_)run-(?P<value>[0-9]+)",
+              "(^|_)run(?P<value>[=+])"
+            ]
+          },
+          "$run_counter": {
+            "key": "field_map.{file.info.BIDS.Dir}"
+          }
+        }
+      }
+    },
+    {
+      "id": "func_file",
+      "template": "func_file",
+      "where": {
+        "container_type": "file",
+        "file.type": {
+          "$in": [
+            "nifti",
+            "NIfTI"
+          ]
+        },
+        "file.classification.Intent": {
+          "$in": [
+            "Functional"
+          ]
+        },
+        "acquisition.label": {
+          "$in": [
+            "faces_matching",
+            "effort",
+            "REST",
+            "TOM",
+            "MOVIE",
+            "oval_family"
+          ]
+        }
+      },
+      "initialize": {
+        "Task": {
+          "acquisition.label": {
+            "$regex": "(?P<value>[^-]+[^0-9])",
+            "$format": [
+              {
+                "$replace": {
+                  "$pattern": "_",
+                  "$replacement": ""
+                }
+              }
+            ]
+          }
+        },
+        "Run": {
+          "acquisition.label": {
+            "$regex": "(?P<value>[0-9]+)"
+          }
+        }
+      }
+    },
+
+    {
+      "id": "func_file_poke",
+      "template": "func_file",
+      "where": {
+        "container_type": "file",
+        "file.type": {
+          "$in": [
+            "nifti",
+            "NIfTI"
+          ]
+        },
+        "file.classification.Intent": {
+          "$in": [
+            "Functional"
+          ]
+        },
+        "acquisition.label": {
+          "$in": [
+            "poke"
+          ]
+        }
+      },
+      "initialize": {
+        "Task": {
+          "acquisition.label": {
+            "$regex": "(?P<value>[^-]+[^0-9])",
+            "$format": [
+              {
+                "$replace": {
+                  "$pattern": "_",
+                  "$replacement": ""
+                }
+              }
+            ]
+          }
+        },
+        "Run": {
+          "acquisition.label": {
+            "$regex": "(?P<value>[0-9]+)"
+          }
+        },
+        "Acq": {
+          "$switch": {
+            "$on": "acquisition.label",
+            "$cases": [
+              {
+                "$regex": "(.*poke.*)",
+                "$value": "+"
+              }
+            ]
+          },
+          "$run_counter": {
+            "key": "func_acq.{file.info.BIDS.Run}"
+          }
+        }
+      }
+    }
+  ],
+  "initializers": [
+    {
+      "rule": "func_file_poke",
+      "where": {
+        "file.info.BIDS.Acq": {
+          "$in": [
+            "1"
+          ]
+        }
+      },
+        "initialize": {
+          "Acq": ""
+        }
+    },
+    {
+      "rule": "func_file_poke",
+      "where": {
+        "file.info.BIDS.Acq": {
+          "$in": [
+            "2"
+          ]
+        },
+        "file.info.BIDS.rule_id": {
+          "$in": [
+            "func_file_poke"
+          ]
+        }
+      },
+        "initialize": {
+          "Acq": "dupx"
+        }
+    },
+    {
+      "rule": "fieldmap_phase_encoded_file",
+      "where": {
+        "file.info.ImageType": {
+          "$in": ["DIFFUSION"]
+        }
+      },
+      "initialize": {
+        "Acq": "dwi",
+        "IntendedFor": [
+          {"Folder": "dwi"}
+        ]
+      }
+    },
+    {
+      "rule": "fieldmap_phase_encoded_file",
+      "where": {
+        "file.info.ImageType": {
+          "$in": ["M"]
+        }
+      },
+      "initialize": {
+        "Acq": "func",
+        "IntendedFor": [
+          {"Folder": "func"}
+        ]
+      }
+    },
+    {
+      "rule": "anat_file",
+      "where": {
+        "acquisition.label": {
+          "$regex": ".*MPR(?!vNav)(_[0-9])?$"
+        },
+        "file.info.ImageType": {
+          "$eq": [
+            "ORIGINAL",
+            "PRIMARY",
+            "M",
+            "ND",
+            "NORM"
+          ]
+        }
+      },
+      "initialize": {
+        "Rec": "Norm",
+        "Acq": "MPR"
+      }
+    },
+    {
+      "rule": "anat_file",
+      "where": {
+        "acquisition.label": {
+          "$regex": ".*MPR(?!vNav)(_[0-9])?$"
+        },
+        "file.info.ImageType": {
+          "$eq": [
+            "ORIGINAL",
+            "PRIMARY",
+            "M",
+            "ND"
+          ]
+        }
+      },
+      "initialize": {
+        "Acq": "MPR"
+      }
+    },
+
+    {
+      "rule": "anat_file",
+      "where": {
+        "acquisition.label": {
+          "$regex": ".*MPR_vNav(_[0-9])?$"
+        }
+      },
+      "initialize": {
+        "Acq": "MPR",
+        "Rec": {
+          "$switch": {
+            "$on": "file.info.ImageType",
+            "$cases": [
+              {
+                "$eq": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND"
+                ],
+                "$value": "vNav"
+              },
+              {
+                "$eq": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND",
+                  "NORM"
+                ],
+                "$value": "vNavNorm"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
